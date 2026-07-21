@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#faf7ec" id="meta-theme">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icon-192.png">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+  <title>SFC - Student Financial Companion</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ===== LOGIN / REGISTER ===== -->
+<div id="page-login" class="page active" style="display:flex; align-items:center; min-height:100vh; padding:24px 20px; flex-direction:column; justify-content:center;">
+  <img src="logo.png" alt="SFC — Student Financial Companion" id="login-hero">
+  <div class="login-tagline">for the money-wise student</div>
+  <div class="login-box" style="margin-top:22px;">
+    <div id="login-form">
+      <input type="text" id="login-user" placeholder="Username" />
+      <input type="password" id="login-pass" placeholder="Password" />
+      <button class="btn-primary" onclick="handleLogin()">Sign In</button>
+      <button class="btn-secondary" onclick="showRegister()">Create New Account</button>
+      <div id="login-msg" style="margin-top:10px; font-size:12px; color:var(--danger); text-align:center;"></div>
+    </div>
+    <div id="register-form" style="display:none;">
+      <h4 style="color:var(--heading); margin-bottom:10px;">Set up your budget</h4>
+      <input type="text" id="reg-user" placeholder="Choose Username" />
+      <input type="password" id="reg-pass" placeholder="Choose Password" />
+      <input type="password" id="reg-pass2" placeholder="Confirm Password" />
+      <hr style="border-color:var(--border); margin:12px 0;">
+      <input type="number" id="reg-total" placeholder="Total Allowance" />
+      <input type="number" id="reg-savings" placeholder="Savings Goal" />
+      <label class="settings-label" style="margin-top:10px;">How long should this money last?</label>
+      <div style="display:flex; gap:8px; margin-bottom:8px;">
+        <input type="number" id="reg-period-num" placeholder="e.g. 28" style="flex:1;" />
+        <select id="reg-period-unit" class="settings-select" style="max-width:112px; margin-bottom:0;">
+          <option value="days">Days</option>
+          <option value="months">Months</option>
+        </select>
+      </div>
+      <div class="chip-row" style="margin-bottom:8px;">
+        <button type="button" class="chip" onclick="setPeriodPreset('reg',14,'days')">2 weeks</button>
+        <button type="button" class="chip" onclick="setPeriodPreset('reg',1,'months')">1 month</button>
+        <button type="button" class="chip" onclick="setPeriodPreset('reg',2,'months')">2 months</button>
+        <button type="button" class="chip" onclick="setPeriodPreset('reg',4,'months')">Semester (4mo)</button>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
+        <input type="number" id="reg-food" placeholder="Food" />
+        <input type="number" id="reg-data" placeholder="Data & Water" />
+        <input type="number" id="reg-personal" placeholder="Personal" />
+        <input type="number" id="reg-school" placeholder="School" />
+        <input type="number" id="reg-repairs" placeholder="Repairs" />
+        <input type="number" id="reg-other" placeholder="Other" />
+      </div>
+      <button class="btn-primary" onclick="handleRegister()" style="margin-top:12px;">Create Account</button>
+      <button class="btn-secondary" onclick="showLogin()">Back to Sign In</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== NAVIGATION ===== -->
+<nav class="nav" id="main-nav" style="display:none;">
+  <button class="nav-btn active" onclick="goTo('overview', this)">🏠 Home</button>
+  <button class="nav-btn" onclick="goTo('tracker', this)">💰 Log Spend</button>
+  <button class="nav-btn" onclick="goTo('charts', this)">📊 Analysis</button>
+  <button class="nav-btn" onclick="goTo('plan', this)">📅 Plan</button>
+  <button class="nav-btn" onclick="goTo('menu', this)">🍽️ Menu</button>
+  <button class="nav-btn" onclick="goTo('goals', this)">🎯 Goals</button>
+  <button class="nav-btn" onclick="goTo('reminders', this)">🔔 Reminders</button>
+  <button class="nav-btn" onclick="goTo('settings', this)">⚙️ Settings</button>
+</nav>
+
+<!-- ===== PAGE: OVERVIEW ===== -->
+<div class="page active" id="page-overview">
+  <div class="hero">
+    <div class="label">Total Allowance</div>
+    <div class="big" id="home-total">₦150,000</div>
+    <div class="sub"><span id="hero-period">4 weeks</span> · Started <span id="start-date"></span></div>
+  </div>
+
+  <div class="streak-card" id="streak-card">
+    <span class="streak-emoji" id="streak-emoji">🌱</span>
+    <div>
+      <div><span class="streak-num" id="streak-num">0</span></div>
+      <div class="streak-label" id="streak-label">days staying within your food budget</div>
+    </div>
+  </div>
+
+  <div class="tip-banner" id="tip-banner"></div>
+
+  <div class="sec-title">Budget allocation</div>
+  <div class="allocation-grid" id="alloc-grid"></div>
+  <div class="days-strip">
+    <div><div class="d-label">Money lasts approx.</div><div class="d-count" id="days-left-count">28 days</div></div>
+    <div><div class="d-count" id="balance-left" style="font-size:18px;text-align:right"></div><div class="d-sub">remaining balance</div></div>
+  </div>
+  <div class="sec-title">Monthly estimate</div>
+  <div class="month-estimate"><h3>WHERE YOUR MONEY WILL GO</h3><div id="estimate-rows"></div></div>
+</div>
+
+<!-- ===== PAGE: TRACKER ===== -->
+<div class="page" id="page-tracker">
+  <div class="sec-title">What are you spending on?</div>
+  <div class="cat-selector">
+    <button class="cat-btn active-food" id="cat-food" onclick="selectCat('food')">🍛 Food</button>
+    <button class="cat-btn" id="cat-data" onclick="selectCat('data')">📶 Data & Water</button>
+    <button class="cat-btn" id="cat-personal" onclick="selectCat('personal')">🧴 Personal</button>
+    <button class="cat-btn" id="cat-school" onclick="selectCat('school')">📚 School</button>
+    <button class="cat-btn" id="cat-repairs" onclick="selectCat('repairs')">🔧 Repairs</button>
+    <button class="cat-btn" id="cat-other" onclick="selectCat('other')">📦 Other</button>
+  </div>
+  <div class="add-form">
+    <input type="text" id="spend-name" placeholder="What did you spend on?" />
+    <div class="row"><input type="number" id="spend-amt" placeholder="Amount (₦)" /><button class="btn-add" onclick="addEntry()">Add</button></div>
+  </div>
+
+  <div class="sec-title">Quick add</div>
+  <div class="chip-row" id="quickadd-row"></div>
+
+  <div class="sec-title">Today's spending</div>
+  <div class="daily-bar">
+    <div class="db-row"><span class="db-label">Daily food budget</span><span class="db-val" id="daily-food-budget-label">₦2,500</span></div>
+    <div class="db-row"><span class="db-label">Food spent today</span><span class="db-val" id="food-today">₦0</span></div>
+    <div class="db-row"><span class="db-label">Other spent today</span><span class="db-val" id="other-today">₦0</span></div>
+    <div class="prog-bar"><div class="prog-fill" id="food-prog" style="width:0%;background:var(--food)"></div></div>
+  </div>
+  <div class="log-list" id="log-list"><div class="empty">No entries yet. Log your first expense above.</div></div>
+</div>
+
+<!-- ===== PAGE: CHARTS ===== -->
+<div class="page" id="page-charts">
+  <div class="sec-title">Spending breakdown</div>
+  <div class="chart-wrap">
+    <div class="chart-title">BY CATEGORY (TOTAL SPENT)</div>
+    <div class="donut-wrap" style="height:200px"><canvas id="donut-chart" height="200"></canvas><div class="donut-center"><div class="dc-val" id="donut-total">₦0</div><div class="dc-label">total spent</div></div></div>
+    <div class="legend" id="donut-legend"></div>
+  </div>
+  <div class="sec-title">Daily spending trend</div>
+  <div class="chart-wrap"><div class="chart-title">FOOD VS OTHER — LAST 7 DAYS</div><canvas id="line-chart" height="180"></canvas></div>
+  <div class="sec-title">Key stats</div>
+  <div class="stat-grid" id="stat-grid"></div>
+  <div class="sec-title">Budget health</div>
+  <div class="chart-wrap"><div class="chart-title">BUDGET USED PER CATEGORY</div><canvas id="bar-chart" height="200"></canvas></div>
+</div>
+
+<!-- ===== PAGE: PLAN ===== -->
+<div class="page" id="page-plan">
+  <div class="sec-title">Monthly budget plan</div>
+  <div class="plan-table" id="plan-table"></div>
+  <div class="sec-title" style="margin-top:20px">Your 5 money rules</div>
+  <div class="rule-list">
+    <h3>🔒 Non-negotiables</h3>
+    <div class="rule"><span class="r-icon">🍛</span><span>Food budget is your daily max. Log every meal before buying the next one.</span></div>
+    <div class="rule"><span class="r-icon">📶</span><span>Data is a fixed weekly cost. Batch downloads when near a strong signal.</span></div>
+    <div class="rule"><span class="r-icon">🚫</span><span>Treats (shawarma, meat pie) max once a week — only if you're under budget that week.</span></div>
+    <div class="rule"><span class="r-icon">💾</span><span>Your savings goal is untouchable unless it's a real emergency (health, academic).</span></div>
+    <div class="rule"><span class="r-icon">📊</span><span>Check the Analysis tab every 3 days. If any category is over 50% spent before week 2, cut spending immediately.</span></div>
+  </div>
+</div>
+
+<!-- ===== PAGE: MENU ===== -->
+<div class="page" id="page-menu">
+  <div class="sec-title">🍽️ Student Menu & Prices</div>
+  <div class="daily-bar" style="margin-bottom:12px; background:var(--card);">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+      <span style="font-size:12px; color:var(--dim);">🛒 Cheapest item finder:</span>
+      <select id="compare-cat" onchange="updateComparison()" style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:6px 10px; color:var(--text); font-family:'DM Sans'; font-size:12px;">
+        <option value="0">🍚 Main Meals</option><option value="1">🍲 Soups & Swallows</option>
+        <option value="2">🍽️ Other Foods</option><option value="3">🥤 Drinks</option>
+      </select>
+      <span id="cheapest-result" style="font-family:'DM Mono'; font-size:13px; color:var(--safe);">Select a category</span>
+    </div>
+  </div>
+  <div class="daily-bar" style="margin-bottom:12px;">
+    <div class="db-row"><span class="db-label">🍛 Food spent today</span><span class="db-val" id="menu-food-used">₦0</span></div>
+    <div class="db-row"><span class="db-label">📅 Daily food budget</span><span class="db-val" id="menu-daily-budget">₦2,500</span></div>
+    <div class="prog-bar"><div class="prog-fill" id="menu-food-prog" style="width:0%;background:var(--food)"></div></div>
+  </div>
+  <input type="text" id="menu-search" placeholder="🔍 Search for a meal or drink..." onkeyup="renderMenu()" style="width:100%; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:11px 12px; color:var(--text); font-family:'DM Sans',sans-serif; margin-bottom:14px; outline:none;" />
+  <div id="menu-list" class="menu-list"></div>
+</div>
+
+<!-- ===== PAGE: GOALS ===== -->
+<div class="page" id="page-goals">
+  <div class="sec-title">🎯 Savings Goals</div>
+  <div class="add-form" style="margin-bottom:12px;">
+    <input type="text" id="goal-name" placeholder="Goal (e.g. New Laptop, School Fees)" />
+    <div class="row"><input type="number" id="goal-target" placeholder="Target amount (₦)" /><input type="number" id="goal-saved" placeholder="Saved so far (₦)" /><button class="btn-add" onclick="addGoal()">Add Goal</button></div>
+  </div>
+  <div id="goals-list" class="log-list"></div>
+</div>
+
+<!-- ===== PAGE: REMINDERS ===== -->
+<div class="page" id="page-reminders">
+  <div class="sec-title">🔔 Bill & Fee Reminders</div>
+  <div class="add-form" style="margin-bottom:12px;">
+    <input type="text" id="reminder-desc" placeholder="What's due? (e.g. School Fees)" />
+    <div class="row"><input type="number" id="reminder-amt" placeholder="Amount (₦)" /><input type="date" id="reminder-date" /><button class="btn-add" onclick="addReminder()">Add Reminder</button></div>
+  </div>
+  <div id="reminders-list" class="log-list"></div>
+</div>
+
+<!-- ===== PAGE: SETTINGS ===== -->
+<div class="page" id="page-settings">
+  <div class="sec-title">🎨 App Personalization</div>
+  <div class="login-box" style="max-width:100%; margin-top:0;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <h3 style="color:var(--heading);">Customize Your Experience</h3>
+      <button onclick="handleLogout()" style="background:var(--danger); color:#fff; border:none; padding:6px 14px; border-radius:8px; cursor:pointer; font-size:11px;">Logout</button>
+    </div>
+    <input type="number" id="set-total" placeholder="Total Allowance" />
+    <input type="number" id="set-savings" placeholder="Savings Goal" />
+    <label class="settings-label" style="margin-top:10px;">How long should this money last?</label>
+    <div style="display:flex; gap:8px; margin-bottom:8px;">
+      <input type="number" id="set-period-num" placeholder="e.g. 28" style="flex:1;" />
+      <select id="set-period-unit" class="settings-select" style="max-width:112px; margin-bottom:0;">
+        <option value="days">Days</option>
+        <option value="months">Months</option>
+      </select>
+    </div>
+    <div class="chip-row" style="margin-bottom:8px;">
+      <button type="button" class="chip" onclick="setPeriodPreset('set',14,'days')">2 weeks</button>
+      <button type="button" class="chip" onclick="setPeriodPreset('set',1,'months')">1 month</button>
+      <button type="button" class="chip" onclick="setPeriodPreset('set',2,'months')">2 months</button>
+      <button type="button" class="chip" onclick="setPeriodPreset('set',4,'months')">Semester (4mo)</button>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:8px 0;">
+      <input type="number" id="set-food" placeholder="Food" /><input type="number" id="set-data" placeholder="Data & Water" />
+      <input type="number" id="set-personal" placeholder="Personal" /><input type="number" id="set-school" placeholder="School" />
+      <input type="number" id="set-repairs" placeholder="Repairs" /><input type="number" id="set-other" placeholder="Other" />
+    </div>
+    <hr style="border-color:var(--border); margin:12px 0;">
+    <div class="settings-group-title">🖌️ Interface Settings</div>
+    <label class="settings-label">Theme</label>
+    <select id="set-theme" class="settings-select">
+      <option value="light">Fresh & Light (Cream)</option><option value="dark">Dark Mode</option>
+    </select>
+    <label class="settings-label">Navigation Position</label>
+    <select id="set-nav" class="settings-select">
+      <option value="bottom">Bottom Tab Bar</option><option value="top">Top Frosted Nav</option>
+    </select>
+    <label class="settings-label">Card Style</label>
+    <select id="set-card" class="settings-select">
+      <option value="soft">Soft Glassmorphism</option><option value="sharp">Sharp Glass</option>
+    </select>
+    <label class="settings-label">Animations</label>
+    <select id="set-anim" class="settings-select">
+      <option value="smooth">Professional Smooth</option><option value="playful">Playful & Energetic</option>
+    </select>
+    <button class="btn-primary" onclick="saveSettings()" style="margin-top:14px;">Save Preferences</button>
+
+    <div class="backup-box">
+      <div class="settings-group-title" style="margin-bottom:8px;">💾 Backup & Restore</div>
+      <div class="backup-actions">
+        <button class="btn-backup" onclick="exportData()">⬇️ Export Backup</button>
+        <button class="btn-backup" onclick="triggerImport()">⬆️ Import Backup</button>
+      </div>
+      <input type="file" id="import-file" accept="application/json" style="display:none;" onchange="importData(this)">
+      <div class="backup-hint">Everything lives only on this device. Export a backup before clearing browser data or switching devices, and import it to restore.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOAST CONTAINER ===== -->
+<div id="toast-container"></div>
+
+<!-- ===== SCRIPTS ===== -->
+<script src="app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./service-worker.js');
+  }
+</script>
+</body>
+</html>
